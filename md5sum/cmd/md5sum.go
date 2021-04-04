@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/hageshtrem/md5sum"
+	"github.com/hageshtrem/codewalks/md5sum"
 )
 
 func main() {
