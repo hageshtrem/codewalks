@@ -10,4 +10,9 @@ Example from [Go Concurrency Patterns: Pipelines and cancellation](https://blog.
 ## load_balancer
 
 Sketch from the [presentation](https://talks.golang.org/2012/waza.slide#45).
-Example of Heap usage.
+An example of Heap usage.
+
+## crawler
+
+Exercise from [A Tour of Go](https://tour.golang.org/concurrency/10).
+An example of recursive concurrency.
