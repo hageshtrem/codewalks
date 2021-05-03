@@ -16,3 +16,8 @@ An example of Heap usage.
 
 Exercise from [A Tour of Go](https://tour.golang.org/concurrency/10).
 An example of recursive concurrency.
+
+## pig
+
+A dice game from [First-Class Functions in Go](https://golang.org/doc/codewalk/functions/).
+For loops over slice for every pair. Format Printf with fixed width.
