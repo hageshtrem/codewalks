@@ -91,22 +91,22 @@ func (game) stay(s Score) Score {
 
 // Play runs a game and returns a winner. First player plays first.
 func (g game) Play(player1, player2 Player) Player {
-	players := []Player{player1, player2}
-	currentPlayer := 0
+	players := coupleOfPlayers{player1, player2}
+	currentPlayer := players.first()
 	var score Score
 	var turnIsOver bool
 	for score.Player+score.ThisTurn < g.win {
-		switch players[currentPlayer].MakeChoice(score) {
+		switch currentPlayer.MakeChoice(score) {
 		case Roll:
 			if score, turnIsOver = g.roll(score); turnIsOver {
-				currentPlayer = (currentPlayer + 1) % 2
+				currentPlayer = players.swap(currentPlayer)
 			}
 		case Stay:
 			score = g.stay(score)
-			currentPlayer = (currentPlayer + 1) % 2
+			currentPlayer = players.swap(currentPlayer)
 		}
 	}
-	return players[currentPlayer]
+	return currentPlayer
 }
 
 // Player makes a choice in the game by the Score.
@@ -123,6 +123,21 @@ func NewPlayer(name string, strategy Strategy) Player {
 // MakeChoice returnc an Action.
 func (p Player) MakeChoice(score Score) Action {
 	return p.strategy(score)
+}
+
+type coupleOfPlayers struct {
+	p1, p2 Player
+}
+
+func (c coupleOfPlayers) first() Player {
+	return c.p1
+}
+
+func (c coupleOfPlayers) swap(p Player) Player {
+	if p.Name != c.p1.Name {
+		return c.p1
+	}
+	return c.p2
 }
 
 // Strategy chooses an action for any given score.
