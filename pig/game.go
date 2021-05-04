@@ -1,6 +1,13 @@
 package pig
 
-import "math/rand"
+import (
+	"math/rand"
+	"time"
+)
+
+func init() {
+	rand.Seed(time.Now().Unix())
+}
 
 // A score includes scores accumulated in previous turns for each player,
 // as well as the points scored by the current player in this turn.
@@ -51,37 +58,41 @@ func NewRandomDice() Dice {
 }
 
 // Game is a pig game.
-type Game struct {
+type Game interface {
+	Play(player1, player2 Player) Player
+}
+
+type game struct {
 	dice Dice
 	win  uint
 }
 
 // NewGame receives a dice instance and a win score and returns a Game.
 func NewGame(dice Dice, win uint) Game {
-	return Game{dice, win}
+	return game{dice, win}
 }
 
 // roll returns the (result, turnIsOver) outcome of simulating a die roll.
 // If the roll value is 1, then thisTurn score is abandoned, and the players'
 // roles swap.  Otherwise, the roll value is added to thisTurn.
-func (g Game) roll(s Score) (Score, bool) {
+func (g game) roll(s Score) (Score, bool) {
 	outcome := uint(g.dice.Roll())
-	if outcome == 1 {
-		return Score{s.Opponent, s.Player, 0}, true
+	if outcome == uint(One) {
+		return Score{Player: s.Opponent, Opponent: s.Player, ThisTurn: 0}, true
 	}
-	return Score{s.Player, s.Opponent, s.ThisTurn + outcome}, false
+	return Score{Player: s.Player, Opponent: s.Opponent, ThisTurn: s.ThisTurn + outcome}, false
 }
 
 // stay returns the result outcome of staying.
 // thisTurn score is added to the player's score, and the players' roles swap.
-func (Game) stay(s Score) Score {
-	return Score{s.Opponent, s.Player + s.ThisTurn, 0}
+func (game) stay(s Score) Score {
+	return Score{Player: s.Opponent, Opponent: s.Player + s.ThisTurn, ThisTurn: 0}
 }
 
-// Play runs a game and returns a winner.
-func (g Game) Play(player1, player2 Player) Player {
+// Play runs a game and returns a winner. First player plays first.
+func (g game) Play(player1, player2 Player) Player {
 	players := []Player{player1, player2}
-	currentPlayer := rand.Intn(2) // Randomly decide who plays first
+	currentPlayer := 0
 	var score Score
 	var turnIsOver bool
 	for score.Player+score.ThisTurn < g.win {
@@ -92,6 +103,7 @@ func (g Game) Play(player1, player2 Player) Player {
 			}
 		case Stay:
 			score = g.stay(score)
+			currentPlayer = (currentPlayer + 1) % 2
 		}
 	}
 	return players[currentPlayer]
