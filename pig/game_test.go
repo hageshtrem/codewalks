@@ -2,7 +2,6 @@ package pig_test
 
 import (
 	"reflect"
-	"strconv"
 	"testing"
 
 	"github.com/hageshtrem/codewalks/pig"
@@ -162,15 +161,6 @@ func (firstWinGame) Play(player1, _ pig.Player) pig.Player {
 	return player1
 }
 
-func createPlayers(n uint) []pig.Player {
-	players := make([]pig.Player, 0, n)
-	for i := 0; i < int(n); i++ {
-		p := pig.NewPlayer(strconv.Itoa(i), pig.StayAtK(uint(i+1)))
-		players = append(players, p)
-	}
-	return players
-}
-
 func TestTournament(t *testing.T) {
 	var game firstWinGame
 	tests := []struct {
@@ -196,10 +186,22 @@ func TestTournament(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			tournament := pig.NewTournament(game, tt.gamesPerSeries)
-			wins, _ := tournament.RoundRobin(createPlayers(tt.players))
+			wins, _ := tournament.RoundRobin(pig.CreatePlayers(tt.players))
 			if !reflect.DeepEqual(tt.wins, wins) {
 				t.Errorf("\nwant: %v\ngot:  %v", tt.wins, wins)
 			}
 		})
 	}
+}
+
+func BenchmarkTournament(b *testing.B) {
+	game := pig.NewGame(pig.NewRandomDice(), win)
+	tournament := pig.NewTournament(game, 10)
+	players := pig.CreatePlayers(10)
+	var wins []uint
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		wins, _ = tournament.RoundRobin(players)
+	}
+	b.Log(wins)
 }

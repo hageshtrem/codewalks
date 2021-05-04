@@ -1,5 +1,9 @@
 package pig
 
+import (
+	"strconv"
+)
+
 // Tournament represents game tournament.
 type Tournament struct {
 	game           Game
@@ -30,4 +34,14 @@ func (t Tournament) RoundRobin(players []Player) ([]uint, uint) {
 	}
 	gamesPerPlayer := t.gamesPerSeries * uint(len(players)-1) // no self play
 	return wins, gamesPerPlayer
+}
+
+// CreatePlayers returns slice of n Players.
+func CreatePlayers(n uint) []Player {
+	players := make([]Player, 0, n)
+	for i := 0; i < int(n); i++ {
+		p := NewPlayer(strconv.Itoa(i), StayAtK(uint(i+1)))
+		players = append(players, p)
+	}
+	return players
 }
