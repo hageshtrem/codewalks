@@ -1,48 +1,102 @@
 package pig_test
 
 import (
+	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/hageshtrem/codewalks/pig"
 )
 
-// treeTwoOneDice is implementation of the pig.Dice with a predicted roll result.
-// Each Roll call returns values in the sequence 3, 2, 1, 3, 2, 1, ...
-type treeTwoOneDice int
+// The winning score in a game of Pig
+const win = 100
 
-func (d *treeTwoOneDice) Roll() pig.DiceValue {
-	defer func() { *d = (*d - 1) % 3 }()
-	return pig.DiceValue(((*d + 2) % 3) + 1)
+// sixToOneDice is implementation of the pig.Dice with a predicted roll result.
+// Each Roll call returns values in the sequence 6, 5, 4, 3, 2, 1, 6, ...
+type sixToOneDice int
+
+func (d *sixToOneDice) Roll() pig.DiceValue {
+	val := pig.DiceValue(((*d + 5) % 6) + 1)
+	*d = (*d - 1) % 6
+	return val
+}
+
+func BenchmarkSixToOneDice(b *testing.B) {
+	var dice sixToOneDice
+	var v pig.DiceValue
+	for i := 0; i < b.N; i++ {
+		v = dice.Roll()
+	}
+	b.Log(v)
+}
+
+func TestSixToOneDice(t *testing.T) {
+	tests := []struct {
+		name       string
+		iterations int
+		values     []pig.DiceValue
+	}{
+		{
+			name:       "3",
+			iterations: 3,
+			values:     []pig.DiceValue{pig.Six, pig.Five, pig.Four},
+		},
+		{
+			name:       "7",
+			iterations: 7,
+			values:     []pig.DiceValue{pig.Six, pig.Five, pig.Four, pig.Three, pig.Two, pig.One, pig.Six},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			var dice sixToOneDice
+			for i := 0; i < tt.iterations; i++ {
+				if v := dice.Roll(); v != tt.values[i] {
+					t.Errorf("want: %v, got: %v", tt.values[i], v)
+				}
+			}
+		})
+	}
 }
 
 func TestGame(t *testing.T) {
+	// In both competitions "20 vs 10" and "10 vs 20", player 1 wins because he plays first.
 	tests := []struct {
 		name             string
 		player1, player2 pig.Player
 		winnerName       string
 	}{
 		{
-			name:       "2 vs 3",
-			player1:    pig.NewPlayer("p1", pig.StayAtK(2)),
-			player2:    pig.NewPlayer("p2", pig.StayAtK(3)),
-			winnerName: "p2",
+			name:       "20 vs 10",
+			player1:    pig.NewPlayer("p1", pig.StayAtK(20)),
+			player2:    pig.NewPlayer("p2", pig.StayAtK(10)),
+			winnerName: "p1",
 		},
 		{
-			name:       "3 vs 2",
-			player1:    pig.NewPlayer("p1", pig.StayAtK(3)),
-			player2:    pig.NewPlayer("p2", pig.StayAtK(2)),
+			name:       "10 vs 20",
+			player1:    pig.NewPlayer("p1", pig.StayAtK(10)),
+			player2:    pig.NewPlayer("p2", pig.StayAtK(20)),
 			winnerName: "p1",
 		},
 		{
 			name:       "1 vs 3",
 			player1:    pig.NewPlayer("p1", pig.StayAtK(1)),
 			player2:    pig.NewPlayer("p2", pig.StayAtK(3)),
-			winnerName: "p2",
+			winnerName: "p1",
 		},
 		{
 			name:       "3 vs 1",
 			player1:    pig.NewPlayer("p1", pig.StayAtK(3)),
 			player2:    pig.NewPlayer("p2", pig.StayAtK(1)),
+			winnerName: "p2",
+		},
+		{
+			name:       "1 vs 2",
+			player1:    pig.NewPlayer("p1", pig.StayAtK(1)),
+			player2:    pig.NewPlayer("p2", pig.StayAtK(2)),
 			winnerName: "p1",
 		},
 	}
@@ -51,8 +105,8 @@ func TestGame(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			dice := new(treeTwoOneDice)
-			game := pig.NewGame(dice, 10)
+			dice := new(sixToOneDice)
+			game := pig.NewGame(dice, win)
 			if winner := game.Play(tt.player1, tt.player2); winner.Name != tt.winnerName {
 				t.Errorf("winner: %s, but must be: %s", winner.Name, tt.winnerName)
 			}
@@ -74,7 +128,12 @@ func TestStayAtK(t *testing.T) {
 		{
 			name:   "StayAt 3",
 			stayAt: 3,
-			want:   []pig.Action{pig.Roll, pig.Roll, pig.Roll, pig.Stay},
+			want:   []pig.Action{pig.Roll, pig.Stay},
+		},
+		{
+			name:   "StayAt 16",
+			stayAt: 16,
+			want:   []pig.Action{pig.Roll, pig.Roll, pig.Roll, pig.Roll, pig.Stay},
 		},
 	}
 
@@ -84,11 +143,62 @@ func TestStayAtK(t *testing.T) {
 			t.Parallel()
 			strategy := pig.StayAtK(tt.stayAt)
 			var score pig.Score
+			var dice sixToOneDice
 			for i, ta := range tt.want {
 				if action := strategy(score); ta != action {
 					t.Errorf("iteration: %d, want: %v, got: %v", i, ta, action)
 				}
-				score.ThisTurn++
+				score.ThisTurn += uint(dice.Roll())
+			}
+		})
+	}
+}
+
+// firstWinGame implements pig.Game.
+type firstWinGame struct{}
+
+// Play returns player1 as winner.
+func (firstWinGame) Play(player1, _ pig.Player) pig.Player {
+	return player1
+}
+
+func createPlayers(n uint) []pig.Player {
+	players := make([]pig.Player, 0, n)
+	for i := 0; i < int(n); i++ {
+		p := pig.NewPlayer(strconv.Itoa(i), pig.StayAtK(uint(i+1)))
+		players = append(players, p)
+	}
+	return players
+}
+
+func TestTournament(t *testing.T) {
+	var game firstWinGame
+	tests := []struct {
+		name           string
+		gamesPerSeries uint
+		players        uint
+		wins           []uint
+	}{
+		{
+			name:           "4 players",
+			gamesPerSeries: 10,
+			players:        4,
+			wins:           []uint{30, 20, 10, 0},
+		},
+		{
+			name:           "10 players",
+			gamesPerSeries: 10,
+			players:        10,
+			wins:           []uint{90, 80, 70, 60, 50, 40, 30, 20, 10, 0},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			tournament := pig.NewTournament(game, tt.gamesPerSeries)
+			wins, _ := tournament.RoundRobin(createPlayers(tt.players))
+			if !reflect.DeepEqual(tt.wins, wins) {
+				t.Errorf("\nwant: %v\ngot:  %v", tt.wins, wins)
 			}
 		})
 	}
