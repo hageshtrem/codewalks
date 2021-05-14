@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/hageshtrem/codewalks/pig"
+	"github.com/hageshtrem/codewalks/pig/tournament"
 )
 
 const (
@@ -32,8 +33,8 @@ func ratioString(vals ...uint) string {
 
 func main() {
 	game := pig.NewGame(pig.NewRandomDice(), win)
-	players := pig.CreatePlayers(win)
-	tournament := pig.NewTournament(game, gamesPerSeries)
+	players := tournament.CreatePlayers(win)
+	tournament := tournament.NewTournament(game, gamesPerSeries)
 	wins, games := tournament.RoundRobin(players)
 
 	for i := range players {

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/hageshtrem/codewalks/pig"
+	"github.com/hageshtrem/codewalks/pig/tournament"
 )
 
 // The winning score in a game of Pig
@@ -185,8 +186,8 @@ func TestTournament(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			tournament := pig.NewTournament(game, tt.gamesPerSeries)
-			wins, _ := tournament.RoundRobin(pig.CreatePlayers(tt.players))
+			tour := tournament.NewTournament(game, tt.gamesPerSeries)
+			wins, _ := tour.RoundRobin(tournament.CreatePlayers(tt.players))
 			if !reflect.DeepEqual(tt.wins, wins) {
 				t.Errorf("\nwant: %v\ngot:  %v", tt.wins, wins)
 			}
@@ -196,12 +197,12 @@ func TestTournament(t *testing.T) {
 
 func BenchmarkTournament(b *testing.B) {
 	game := pig.NewGame(pig.NewRandomDice(), win)
-	tournament := pig.NewTournament(game, 10)
-	players := pig.CreatePlayers(10)
+	tour := tournament.NewTournament(game, 10)
+	players := tournament.CreatePlayers(10)
 	var wins []uint
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		wins, _ = tournament.RoundRobin(players)
+		wins, _ = tour.RoundRobin(players)
 	}
 	b.Log(wins)
 }

@@ -46,36 +46,31 @@ type Dice interface { // or type DiceRoll func() DiceValue
 	Roll() DiceValue
 }
 
-type dice struct{}
+type RandomDice struct{}
 
-func (dice) Roll() DiceValue {
+func (RandomDice) Roll() DiceValue {
 	return DiceValue(rand.Intn(6) + 1)
 }
 
 // NewRandomDice returns a dice with random behaviour.
-func NewRandomDice() Dice {
-	return dice{}
+func NewRandomDice() RandomDice {
+	return RandomDice{}
 }
 
-// Game is a pig game.
-type Game interface {
-	Play(player1, player2 Player) Player
-}
-
-type game struct {
+type Game struct {
 	dice Dice
 	win  uint
 }
 
 // NewGame receives a dice instance and a win score and returns a Game.
 func NewGame(dice Dice, win uint) Game {
-	return game{dice, win}
+	return Game{dice, win}
 }
 
 // roll returns the (result, turnIsOver) outcome of simulating a die roll.
 // If the roll value is 1, then thisTurn score is abandoned, and the players'
 // roles swap.  Otherwise, the roll value is added to thisTurn.
-func (g game) roll(s Score) (Score, bool) {
+func (g Game) roll(s Score) (Score, bool) {
 	outcome := uint(g.dice.Roll())
 	if outcome == uint(One) {
 		return Score{Player: s.Opponent, Opponent: s.Player, ThisTurn: 0}, true
@@ -85,12 +80,12 @@ func (g game) roll(s Score) (Score, bool) {
 
 // stay returns the result outcome of staying.
 // thisTurn score is added to the player's score, and the players' roles swap.
-func (game) stay(s Score) Score {
+func (Game) stay(s Score) Score {
 	return Score{Player: s.Opponent, Opponent: s.Player + s.ThisTurn, ThisTurn: 0}
 }
 
 // Play runs a game and returns a winner. First player plays first.
-func (g game) Play(player1, player2 Player) Player {
+func (g Game) Play(player1, player2 Player) Player {
 	players := coupleOfPlayers{player1, player2}
 	currentPlayer := players.first()
 	var score Score
