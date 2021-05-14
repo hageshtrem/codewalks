@@ -21,3 +21,7 @@ An example of recursive concurrency.
 
 A dice game from [First-Class Functions in Go](https://golang.org/doc/codewalk/functions/).
 For loops over slice for every pair. Format Printf with fixed width.
+
+## Marcov chain algorithm
+Generating arbitrary text with a [Markov chain algorithm](https://golang.org/doc/codewalk/markov/).
+A method with a value receiver modifies it's state. 
