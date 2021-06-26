@@ -1,6 +1,7 @@
 package markov
 
 import (
+	"os"
 	"reflect"
 	"sort"
 	"strings"
@@ -127,5 +128,26 @@ func TestGenerate(t *testing.T) {
 				t.Errorf("want: '%s', got: '%s'", tc.generated, result)
 			}
 		})
+	}
+}
+
+func TestExample(t *testing.T) {
+	f, err := os.Open("testdata/example.txt")
+	if err != nil {
+		t.Error(err)
+	}
+	defer f.Close()
+
+	c := NewChain(1)
+	c.Build(f)
+
+	var sb strings.Builder
+	if err := c.Generate(&sb, 7, "I"); err != nil {
+		t.Error(err)
+	}
+	want := "I have the Prism to the Prism to"
+	got := sb.String()
+	if want != got {
+		t.Errorf("want: %s, got: %s", want, got)
 	}
 }
