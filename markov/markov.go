@@ -3,7 +3,6 @@ package markov
 import (
 	"bufio"
 	"io"
-	"regexp"
 	"sort"
 	"strings"
 	"text/scanner"
@@ -24,12 +23,12 @@ func NewChain(prefixLen uint) *Chain {
 func (c *Chain) Build(r io.Reader) {
 	defer c.sort() // sort tokens at the end of building
 
-	var s scanner.Scanner
-	s.Init(r)
+	scanner := bufio.NewScanner(r)
+	scanner.Split(bufio.ScanWords)
 
 	p := make(prefix, c.prefixLen)
-	for tok := s.Scan(); tok != scanner.EOF; tok = s.Scan() {
-		next := s.TokenText()
+	for scanner.Scan() {
+		next := scanner.Text()
 		rs := c.corpus[p.String()]
 		rs.addValue(next)
 		c.corpus[p.String()] = rs
@@ -65,10 +64,8 @@ func (c *Chain) Generate(w io.Writer, n int, seed string) error {
 			}
 			// get the most common
 			v := rs[len(rs)-1].val
-			if !isPunctuationMark(v) {
-				if _, err := bw.WriteString(" "); err != nil {
-					return err
-				}
+			if _, err := bw.WriteString(" "); err != nil {
+				return err
 			}
 			if _, err := bw.WriteString(v); err != nil {
 				return err
@@ -86,11 +83,6 @@ func (c *Chain) sort() {
 		rs.Sort()
 		c.corpus[k] = rs
 	}
-}
-
-func isPunctuationMark(v string) bool {
-	r := regexp.MustCompile(`\pP`)
-	return r.MatchString(v)
 }
 
 type relation struct {

@@ -74,10 +74,10 @@ var markovChainTests = []struct {
 		partOfCorpus: map[string]relationSlice{
 			"":   []relation{{val: "I", count: 1}},
 			"I":  []relation{{val: "will", count: 1}, {val: "am", count: 2}},
-			"a":  []relation{{val: "number", count: 1}, {val: "free", count: 1}},
+			"a":  []relation{{val: "number!", count: 1}, {val: "free", count: 1}},
 			"am": []relation{{val: "not", count: 1}, {val: "a", count: 1}},
 		},
-		genLimit:  11,
+		genLimit:  9,
 		genSeed:   "I will",
 		generated: "I am a free man! I am a free man!",
 	},
@@ -87,10 +87,10 @@ var markovChainTests = []struct {
 		src:       "I am not a number! I am a free man! I will go away!",
 		partOfCorpus: map[string]relationSlice{
 			" ":     []relation{{val: "I", count: 1}}, // space because of prefix.String
-			"not a": []relation{{val: "number", count: 1}},
+			"not a": []relation{{val: "number!", count: 1}},
 			"I am":  []relation{{val: "not", count: 1}, {val: "a", count: 1}},
 		},
-		genLimit:  11,
+		genLimit:  9,
 		genSeed:   "I will",
 		generated: "I will go away!",
 	},
@@ -102,7 +102,6 @@ func TestBuild(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			chain := NewChain(uint(tc.prefixLen))
 			chain.Build(strings.NewReader(tc.src))
-			t.Logf("%+v", chain.corpus)
 			for k, v := range tc.partOfCorpus {
 				got := chain.corpus[k]
 				if !reflect.DeepEqual(got, v) {
